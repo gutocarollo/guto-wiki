@@ -84,19 +84,22 @@ L242-275, e `.github/workflows/ci.yml` L33):
 | Semântica de index | working tree | `--staged` resolve contra o INDEX (`git cat-file -e :path`, `git grep --cached`) |
 | Arquitetura | 2 lints coexistem com escopos disjuntos | 2 scripts SRP — **convergência independente** na decisão de não fundir |
 
-**Recomendações de adoção no learnhouse** (análise; não implementado — pendente de aprovação):
+**Adoção no learnhouse** (implementado e commitado em 2026-07-07, revisão adversarial SATISFEITO):
 
-1. **`blank_code_fences` + `unquote`** no check A do ref-integrity — elimina duas classes conhecidas
-   de erro (falso-positivo em exemplo de código; falso-negativo em link acentuado/com espaço, 9
-   casos reais no repo deles). Custo ~20 linhas. Breakeven imediato. Não adotar só se os docs nunca
-   usarem links com espaço/acento — já usam.
-2. **`check_no_foreign_live_links`** no docs-wiki-lint — hoje o `docs/index.md` do learnhouse pode
-   linkar `_arquivo/` sem ninguém acusar. Custo ~15 linhas.
-3. **Wiring em CI** (job com `docs-wiki-lint.py` + `ref-integrity.py --range origin/main..HEAD`) —
-   backstop de `git commit --no-verify` e de clone sem `core.hooksPath`. Custo: 1 workflow pequeno
-   ao lado dos 8 existentes.
-4. **`--selftest`** no ref-integrity — institucionaliza o teste negativo (lição já registrada:
-   "guard novo só conta depois de teste NEGATIVO"). Custo ~30 linhas.
+1. **`blank_code_fences` + `unquote`** no check A/B do ref-integrity — elimina falso-positivo em
+   exemplo de código e falso-negativo em link acentuado/com espaço. ✔ ADOTADO (fonte única de lógica
+   de fence via `_fence_flags`, 1:1 por linha).
+2. **`check_no_foreign_live_links`** no docs-wiki-lint — ✔ ADOTADO como **WARN** (não FAIL como no
+   slim-shape): os índices do learnhouse usam links a `_arquivo/` como wayfinding rotulado legítimo;
+   FAIL treinaria o time a ignorar o gate (divergência comunicada, §13.4).
+3. **Wiring em CI** — ✔ ADOTADO (`.github/workflows/docs-integrity.yaml`, dispara no push já que o
+   repo é commit-direto-na-main; roda wiki-lint + `--selftest` + range do push; expressões via `env:`).
+4. **`--selftest`** no ref-integrity — ✔ ADOTADO (link morto real DEVE flagar; em code fence NÃO).
+
+**Bug pego pelo dogfooding:** ao commitar, o próprio pre-commit bloqueou com 4 "links mortos" que
+eram DIRETÓRIOS existentes — `git cat-file -e :dir` não resolve diretório no modo `--staged`.
+Corrigido (`exists_in_index` agora cobre dir via `git ls-files -- <path>/`); modo index e working-tree
+passaram a resolver o mesmo conjunto. É o valor do gate rodando contra si mesmo.
 
 **Não copiar:** fusão dos dois lints num só (o próprio slim-shape manteve dois com escopos
 disjuntos) e full-scan de citações como default (o incremental git-aware é o diferencial do
