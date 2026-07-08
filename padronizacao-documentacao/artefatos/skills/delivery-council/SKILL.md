@@ -1,11 +1,14 @@
 ---
-name: learnhouse-delivery-council
-description: Use em tarefas complexas do LearnHouse que envolvam implementacao, planejamento, revisao de plano existente, arquitetura, design-system, banco, auth, tenancy, seguranca, testes, PR review ou qualquer mudanca que precise iniciar por EXECUTION, PLANNING, PLAN_REVIEW ou AUTO, com trade-off automatico e adversarial loops.
+name: delivery-council
+description: Use em tarefas complexas do repo que envolvam implementacao, planejamento, revisao de plano existente, arquitetura, UI, banco, auth, tenancy, seguranca, testes, PR review ou qualquer mudanca que precise iniciar por EXECUTION, PLANNING, PLAN_REVIEW ou AUTO, com trade-off automatico e adversarial loops.
 ---
 
-# LearnHouse Delivery Council
+# Delivery Council
 
-Coordene uma entrega dentro de `/home/augusto/code/learnhouse` usando Codex nativo: `AGENTS.md`, repo skills, custom agents, comandos reais e evidencia desta sessao.
+Coordene uma entrega dentro do repo atual usando Codex nativo: `AGENTS.md`, repo skills, custom agents,
+comandos reais e evidencia desta sessao. Leia `docs-tooling.conf` quando existir; paths de código,
+docs, grafo e nomes de subagents vêm de chaves como `CODE_ROOTS`, `ARCHITECTURE_*`, `SPECIALIZED_*`,
+`UNDERSTAND_*` e `*_AGENT`.
 
 ## Argumentos de Entrada
 
@@ -113,7 +116,7 @@ Limite: maximo de 2 rodadas.
 1. Produza ou revise o plano com opcoes e trade-offs.
    - Em `START_AT=PLANNING`, produza/estruture o plano.
    - Em `START_AT=PLAN_REVIEW`, trate o plano existente como fonte inicial; ajuste apenas gaps criticos corrigiveis, sem refazer discovery/planejamento amplo.
-2. DISPARE um subagent `learnhouse-adversarial-reviewer` contra o plano, docs e codigo real relevante (Claude Code: Agent tool; Codex: custom agent thread). OBRIGATORIO em toda rodada: a review adversarial NUNCA roda inline no contexto principal — quem produziu o plano nao se auto-revisa. `$adversarial-review` e o CONTRATO que o subagent segue, nao um procedimento para o agente principal executar. No prompt, aponte os artefatos por path (plano, arquivos, decisoes) em vez de colar conteudo grande.
+2. DISPARE o subagent definido por `ADVERSARIAL_REVIEWER_AGENT` contra o plano, docs e codigo real relevante (Claude Code: Agent tool; Codex: custom agent thread). OBRIGATORIO em toda rodada: a review adversarial NUNCA roda inline no contexto principal — quem produziu o plano nao se auto-revisa. `$adversarial-review` e o CONTRATO que o subagent segue, nao um procedimento para o agente principal executar. No prompt, aponte os artefatos por path (plano, arquivos, decisoes) em vez de colar conteudo grande.
 3. Exija encerramento:
 
 ```md
@@ -150,12 +153,12 @@ Limite: maximo de 3 rodadas.
 
 ### Rodada
 
-1. DISPARE um subagent `learnhouse-adversarial-reviewer` (Claude Code: Agent tool; Codex: custom agent thread). OBRIGATORIO em toda rodada: a review NUNCA roda inline no contexto principal. Na rodada N+1 do mesmo loop, prefira CONTINUAR o mesmo subagent (Claude Code: SendMessage; Codex: mesma thread) enviando as correcoes aplicadas e exigindo re-verificacao com evidencia nova.
+1. DISPARE o subagent definido por `ADVERSARIAL_REVIEWER_AGENT` (Claude Code: Agent tool; Codex: custom agent thread). OBRIGATORIO em toda rodada: a review NUNCA roda inline no contexto principal. Na rodada N+1 do mesmo loop, prefira CONTINUAR o mesmo subagent (Claude Code: SendMessage; Codex: mesma thread) enviando as correcoes aplicadas e exigindo re-verificacao com evidencia nova.
 2. Exija que o review compare:
    - pedido/plano original;
    - diff e arquivos alterados;
    - docs de arquitetura quando aplicavel;
-   - docs do design-system quando aplicavel;
+   - docs especializados quando aplicavel (`SPECIALIZED_*`);
    - codigo real;
    - comandos e evidencias desta sessao.
 3. Exija que o review termine com:
@@ -200,7 +203,7 @@ Sempre comece por:
 
 - `AGENTS.md`
 - plano, issue, diff ou prompt fornecido pelo usuario
-- codigo real sob `apps/api`, `apps/web`, `packages`, migrations, scripts e testes
+- codigo real sob `CODE_ROOTS`
 
 Se o tema envolver `/understand`, Understand Anything, `.understand-anything`, `knowledge-graph` ou grafo de
 codigo, leia primeiro o arquivo central `docs-tooling.conf` e use as chaves `UNDERSTAND_*`
@@ -211,8 +214,9 @@ no codigo vivo, docs indexadas/log temporal e dados/evidencias do repo.
 
 Leia tambem quando o tema exigir:
 
-- Arquitetura: `docs/architecture/README.md` e documentos relevantes em `docs/architecture`
-- UI/design-system: `docs/design-system/index.md`, docs relevantes em `docs/design-system`, `apps/web/styles/globals.css` e `apps/web/components/ui`
+- Arquitetura: `ARCHITECTURE_INDEX` e documentos relevantes em `ARCHITECTURE_DOCS`
+- UI/categoria especializada: `SPECIALIZED_INDEX`, docs relevantes em `SPECIALIZED_DOCS`,
+  `SPECIALIZED_TOKEN_SOURCE` e `SPECIALIZED_UI_COMPONENTS`, quando configurados
 - Banco/dados: schema, migrations, services e queries no banco dev quando a conclusao depender de cardinalidade, status, NULL, integridade ou distribuicao real
 - Ferramentas, SDKs, frameworks, APIs, CLI ou cloud: documentacao atual conforme `AGENTS.md`
 
@@ -232,9 +236,9 @@ Para tarefas completas, entregue nesta ordem:
 
 Regras duras:
 
-- Toda rodada de review adversarial (Planning Adversarial Loop e Adversarial Verification Loop) roda OBRIGATORIAMENTE em subagent `learnhouse-adversarial-reviewer`, em contexto isolado. PROIBIDO o agente principal executar a review inline: self-review no mesmo contexto herda os vieses de quem produziu o plano/diff (nao e adversarial de fato) e as dezenas de leituras da review estouram o contexto principal.
+- Toda rodada de review adversarial (Planning Adversarial Loop e Adversarial Verification Loop) roda OBRIGATORIAMENTE no subagent definido por `ADVERSARIAL_REVIEWER_AGENT`, em contexto isolado. PROIBIDO o agente principal executar a review inline: self-review no mesmo contexto herda os vieses de quem produziu o plano/diff (nao e adversarial de fato) e as dezenas de leituras da review estouram o contexto principal.
 - Rodada 1 de um loop = subagent novo. Rodadas seguintes do MESMO loop podem continuar o MESMO subagent (Claude Code: SendMessage; Codex: mesma thread) — ele ja conhece os gaps e re-verifica mais barato. O veredito valido e sempre o texto retornado PELO subagent; o agente principal repassa, nao reescreve.
 - No relatorio final, atribua cada rodada ao seu executor (linha `REVISORES:` dos blocos de encerramento). Rodada sem atribuicao de executor nao conta como review valida.
 - Se o mecanismo de subagent estiver indisponivel, PARE e declare o bloqueio — nao rode a review inline como fallback silencioso.
-- Exploracao/pesquisa paralelizavel → `learnhouse-context-scout` (1 investigacao por subagent). Implementacao mecanica em lote de baixo risco (muitos arquivos, decisao ja tomada) pode ir para `learnhouse-implementer` para poupar o contexto principal; decisao arquitetural e edicao central ficam no agente principal. `learnhouse-test-auditor` valida se a evidencia sustenta o claim quando o risco e alto.
+- Exploracao/pesquisa paralelizavel → `CONTEXT_SCOUT_AGENT` (1 investigacao por subagent). Implementacao mecanica em lote de baixo risco (muitos arquivos, decisao ja tomada) pode ir para `IMPLEMENTER_AGENT` para poupar o contexto principal; decisao arquitetural e edicao central ficam no agente principal. `TEST_AUDITOR_AGENT` valida se a evidencia sustenta o claim quando o risco e alto.
 - Sempre espere os subagents da rodada terminarem antes de consolidar achados. Nao use subagents para fugir de uma decisao que exige leitura direta de instrucoes da skill pelo agente principal (ARGS, gates, D[n]).

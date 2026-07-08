@@ -61,7 +61,7 @@ def _fence_flags(text: str) -> list[bool]:
 
 def blank_code_fences(text: str) -> str:
     """Zera o conteúdo de blocos ``` / ~~~ (1:1 por linha). Link/citação DENTRO de fence é EXEMPLO
-    de código, não referência navegável — não deve flagar (padrão portado do slim-shape)."""
+    de código, não referência navegável — não deve flagar."""
     lines = text.splitlines()
     return "\n".join("" if fl else ln for ln, fl in zip(lines, _fence_flags(text)))
 

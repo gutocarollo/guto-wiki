@@ -1,6 +1,6 @@
 ---
 name: adversarial-review
-description: "Revisor adversarial fundamentado em evidencia para o LearnHouse. Use quando o usuario pedir revisar, auditar, criticar, encontrar gaps, validar plano, PR, diff, implementacao, arquitetura, design-system, testes ou execucao. A auditoria deve confrontar explicitamente: docs de arquitetura em docs/architecture, docs do design-system em docs/design-system, codigo real do app, texto do plano e o que foi executado. Toda acusacao precisa ser confirmada ou refutada com evidencia concreta."
+description: "Revisor adversarial fundamentado em evidencia para o repo. Use quando o usuario pedir revisar, auditar, criticar, encontrar gaps, validar plano, PR, diff, implementacao, arquitetura, UI, testes ou execucao. A auditoria deve confrontar explicitamente: docs configurados em docs-tooling.conf, codigo real, texto do plano e o que foi executado. Toda acusacao precisa ser confirmada ou refutada com evidencia concreta."
 ---
 
 # Adversarial Review
@@ -9,17 +9,19 @@ Revisor que ataca plano e implementacao para descobrir onde quebram, mas paga o 
 
 ## Modo de execucao (self-review inline proibido)
 
-Se o artefato auditado foi produzido NESTA conversa pelo proprio agente (plano/diff/execucao proprios — caso dos loops do `learnhouse-delivery-council`), esta skill NAO roda inline: ela e o CONTRATO do prompt de um subagent `learnhouse-adversarial-reviewer` (contexto isolado; Claude Code: Agent tool, Codex: custom agent thread). Rodar inline so e legitimo quando o auditor nao e o autor — ex.: usuario pede review de commit antigo, PR de terceiro ou artefato externo.
+Se o artefato auditado foi produzido NESTA conversa pelo proprio agente (plano/diff/execucao proprios — caso dos loops do `delivery-council`), esta skill NAO roda inline: ela e o CONTRATO do prompt do subagent definido por `ADVERSARIAL_REVIEWER_AGENT` (contexto isolado; Claude Code: Agent tool, Codex: custom agent thread). Rodar inline so e legitimo quando o auditor nao e o autor — ex.: usuario pede review de commit antigo, PR de terceiro ou artefato externo.
 
-## 0. Escopo LearnHouse
+## 0. Escopo
 
-Esta skill e especifica para `/home/augusto/code/learnhouse`. Ela nao revisa apenas o diff. Ela revisa a aderencia entre cinco fontes obrigatorias:
+Esta skill revisa o repo atual. Leia `docs-tooling.conf` quando existir para resolver `CODE_ROOTS`,
+`ARCHITECTURE_*`, `SPECIALIZED_*`, `DOCS_*` e nomes de subagents. Ela nao revisa apenas o diff. Ela revisa
+a aderencia entre cinco fontes obrigatorias:
 
 1. **Plano** - texto enviado pelo usuario ou arquivo de plano citado. Se o plano nao foi fornecido, reconstruir a intencao a partir de commits, diffs, docs de execucao e pedido do usuario, declarando a limitacao.
 2. **Execucao** - arquivos alterados, diff, logs, comandos rodados, relatorios de execucao, testes e evidencia visual quando existir.
-3. **Arquitetura** - documentos canonicos em `docs/architecture`.
-4. **Design system** - documentos canonicos em `docs/design-system`.
-5. **Codigo real do app** - `apps/api`, `apps/web`, `packages`, migrations, scripts, testes, configs e estilos.
+3. **Arquitetura** - documentos canonicos apontados por `ARCHITECTURE_*`.
+4. **Categoria especializada/UI** - documentos canonicos apontados por `SPECIALIZED_*`, quando aplicavel.
+5. **Codigo real do app** - caminhos configurados em `CODE_ROOTS`, migrations, scripts, testes, configs e estilos.
 
 Auditoria que ignora qualquer uma dessas fontes e incompleta. Docs definem contrato; codigo e execucao provam aderencia ou desvio.
 
@@ -27,51 +29,36 @@ Auditoria que ignora qualquer uma dessas fontes e incompleta. Docs definem contr
 
 ### 1.1 Arquitetura
 
-Antes de avaliar decisao arquitetural, seguranca, dados, tenancy, runtime, deploy, performance, integracao ou fluxo de dominio, leia os docs relevantes em `docs/architecture`.
+Antes de avaliar decisao arquitetural, seguranca, dados, tenancy, runtime, deploy, performance, integracao ou fluxo de dominio, leia os docs relevantes em `ARCHITECTURE_DOCS`.
 
 Entrada obrigatoria:
 
-- `docs/architecture/README.md` - mapa arc42 e ordem de leitura.
+- `ARCHITECTURE_INDEX` - mapa e ordem de leitura.
 
 Escolha os documentos conforme o tema auditado:
 
-- `docs/architecture/sad.md` - arquitetura de dominio/produto.
-- `docs/architecture/multi-tenancy.md` - modos de tenancy e isolamento.
-- `docs/architecture/03-estrategia-solucao.md` - decisoes-mae.
-- `docs/architecture/04-building-blocks.md` - containers/componentes.
-- `docs/architecture/05-visao-runtime.md` - fluxos criticos.
-- `docs/architecture/06-visao-deployment.md` - topologia e restricoes de deploy.
-- `docs/architecture/07-conceitos-transversais.md` - seguranca, confiabilidade, performance, observabilidade e dados.
-- `docs/architecture/08-decisoes-arquitetura-adr.md` - ADRs.
-- `docs/architecture/09-requisitos-qualidade.md` - atributos de qualidade e capacidade.
-- `docs/architecture/11-modelo-ameacas-stride.md` - ameacas e controles.
+- docs vivos, ADRs, threat model, visao runtime/deploy, qualidade, dominio e integracoes listados no índice.
 
-Regra: se o gap citado toca arquitetura, cite pelo menos um doc de `docs/architecture` e um trecho/arquivo de codigo que confirma aderencia ou desvio.
+Regra: se o gap citado toca arquitetura, cite pelo menos um doc de `ARCHITECTURE_DOCS` e um trecho/arquivo de codigo que confirma aderencia ou desvio.
 
-### 1.2 Design system
+### 1.2 Categoria especializada/UI
 
-Antes de avaliar UI, tema, tokens, contraste, componentes, motion, dropdowns, dashboards, charts, responsividade, className/Tailwind ou evidencia visual, leia os docs relevantes em `docs/design-system`.
+Antes de avaliar UI, tema, tokens, contraste, componentes, motion, dashboards, responsividade, className/Tailwind ou evidencia visual, leia os docs relevantes em `SPECIALIZED_DOCS` quando configurado.
 
 Entrada obrigatoria:
 
-- `docs/design-system/index.md` - catalogo canonico.
+- `SPECIALIZED_INDEX` - catalogo canonico.
 
 Escolha os documentos conforme o tema auditado:
 
-- `docs/design-system/wiki/design-system.md` - verdade atual consolidada.
-- `docs/design-system/wiki/contrato-pares.md` - contrato de pares coloridos.
-- `docs/design-system/wiki/classname-token-workflow.md` - workflow de className/Tailwind.
-- `docs/design-system/w3c-design-tokens.md` - contrato DTCG.
-- `docs/design-system/decision-shadcn-adoption.md` - direcao shadcn.
-- `docs/design-system/migration-tracking.md` - estado da migracao.
-- Auditorias atuais listadas em `docs/design-system/index.md`, quando o tema bater.
+- páginas vivas, contratos, workflows, decisions e auditorias atuais listadas no índice especializado.
 
 Codigo obrigatorio para conferir o contrato:
 
-- `apps/web/styles/globals.css` - fonte viva dos tokens.
-- `apps/web/components/ui/` - componentes shadcn/ui locais.
+- `SPECIALIZED_TOKEN_SOURCE` - fonte viva dos tokens, quando configurada.
+- `SPECIALIZED_UI_COMPONENTS` - componentes locais, quando configurados.
 - Componentes e telas alteradas no diff.
-- Guardas/scripts quando aplicavel: `apps/web/scripts/ds-pairs-check.py`, `apps/web/scripts/ds-pair-eval.py`, `ds-gate.sh`, miner className.
+- Guardas/scripts quando aplicavel: `SPECIALIZED_GATE_CMD`, `SPECIALIZED_MINING_CHECK_CMD` e comandos correlatos configurados.
 
 Regra: claim visual exige evidencia renderizada (`ui-evidence`) quando a conclusao depende de pixels. Claim de token/contraste exige doc + ponto de uso + guarda/script quando disponivel.
 
@@ -100,7 +87,7 @@ Reinvenção da roda e gap de primeira classe. Para feature nao trivial, avalie 
 
 Trilha obrigatoria:
 
-- Buscar padrao local primeiro: `rg`, componentes existentes, docs de arquitetura/design-system e skills do projeto.
+- Buscar padrao local primeiro: `rg`, componentes existentes, docs de arquitetura/categoria especializada e skills do projeto.
 - Para libs/frameworks/APIs/CLI/cloud: usar Context7 via `ctx7` conforme `AGENTS.md`.
 - Para solucao OSS madura: buscar GitHub/awesome-lists/referencias recentes quando a decisao for nao trivial.
 
@@ -116,7 +103,7 @@ Liste o que esta sendo auditado:
 - Arquivos alterados.
 - Docs de execucao ou relatorios.
 - Testes/evidencias existentes.
-- Docs de arquitetura/design-system que governam o tema.
+- Docs de arquitetura/categoria especializada que governam o tema.
 
 Sem inventario, nao ha auditoria.
 
@@ -125,7 +112,7 @@ Sem inventario, nao ha auditoria.
 Para cada item relevante do plano ou da implementacao:
 
 ```md
-Item | Prometido | Executado | Contrato arquitetura | Contrato design-system | Codigo/teste/evidencia | Hipotese
+Item | Prometido | Executado | Contrato arquitetura | Contrato especializado/UI | Codigo/teste/evidencia | Hipotese
 ```
 
 Use a matriz para gerar hipoteses. Nao pule direto para opiniao.
@@ -135,8 +122,8 @@ Use a matriz para gerar hipoteses. Nao pule direto para opiniao.
 Ataque o artefato por:
 
 - Divergencia plano x execucao.
-- Violacao de `docs/architecture`.
-- Violacao de `docs/design-system`.
+- Violacao de `ARCHITECTURE_DOCS`.
+- Violacao de `SPECIALIZED_DOCS`.
 - Bug de codigo/logica.
 - Falha de dado real.
 - Performance.
@@ -152,8 +139,8 @@ Cada hipotese recebe uma ou mais classes. A classe define a prova obrigatoria.
 | Classe | Quando usar | Prova obrigatoria |
 |---|---|---|
 | **PLANO/ESCOPO** | Item prometido nao aparece na execucao, ou execucao diverge do plano | Texto do plano + diff/arquivo/log que mostra o executado |
-| **ARQUITETURA** | Desvio de tenancy, runtime, deploy, dominio, ADR, qualidade, threat model | Doc em `docs/architecture` + codigo/config/teste que adere ou viola |
-| **DESIGN-SYSTEM/UI** | Token, tema, contraste, shadcn, dropdown, chart, responsividade, motion, className | Doc em `docs/design-system` + codigo de componente/estilo + evidencia visual ou guarda quando aplicavel |
+| **ARQUITETURA** | Desvio de tenancy, runtime, deploy, dominio, ADR, qualidade, threat model | Doc em `ARCHITECTURE_DOCS` + codigo/config/teste que adere ou viola |
+| **UI/ESPECIALIZADO** | Token, tema, contraste, componente, chart, responsividade, motion, className | Doc em `SPECIALIZED_DOCS` + codigo de componente/estilo + evidencia visual ou guarda quando aplicavel |
 | **CODIGO/LOGICA** | Branch faltando, estado invalido, race, erro de validacao, autorizacao, tratamento de erro | Trecho literal de codigo + caminho de execucao + caso concreto que quebra |
 | **DADO/DB** | Premissa sobre cardinalidade, NULL, status, volume, integridade, distribuicao real | Query no banco dev/real disponivel + resultado literal. Sem query, nao e REAL |
 | **PERFORMANCE** | N+1, full scan, indice ausente, render excessivo, asset pesado | EXPLAIN/metricas/perfil quando possivel + volume real ou estimativa declarada |
@@ -187,12 +174,12 @@ Um achado valido precisa conter:
 ```md
 ### [R[n]] [Afirmação direta]
 - Severidade: BLOQUEANTE | ALTA | MEDIA | BAIXA
-- Classe: PLANO/ESCOPO | ARQUITETURA | DESIGN-SYSTEM/UI | CODIGO/LOGICA | DADO/DB | PERFORMANCE | SEGURANCA | FONTE/OSS | TESTE/EVIDENCIA
+- Classe: PLANO/ESCOPO | ARQUITETURA | UI/ESPECIALIZADO | CODIGO/LOGICA | DADO/DB | PERFORMANCE | SEGURANCA | FONTE/OSS | TESTE/EVIDENCIA
 - Veredicto: REAL | TEORICO-descartado | REFUTADO | NAO-PROVADO
 - Contrato esperado:
   - Plano: [arquivo/trecho ou resumo fiel]
-  - Arquitetura: [docs/architecture/... quando aplicavel]
-  - Design-system: [docs/design-system/... quando aplicavel]
+  - Arquitetura: [ARCHITECTURE_DOCS/... quando aplicavel]
+  - Especializado/UI: [SPECIALIZED_DOCS/... quando aplicavel]
 - Evidencia:
   - Codigo: [path + linha/trecho]
   - Execucao: [diff/log/teste/comando/manifest]
@@ -213,13 +200,13 @@ PROXIMO PASSO: [acao de maior severidade]
 | Anti-padrao | Por que e proibido |
 |---|---|
 | Auditar so o diff | O diff nao mostra o contrato do projeto nem o plano prometido |
-| Ignorar `docs/architecture` | Pode aprovar codigo que viola tenancy, runtime, qualidade ou seguranca |
-| Ignorar `docs/design-system` | Pode aprovar UI que quebra tokens, temas, contraste ou padroes canonicos |
+| Ignorar `ARCHITECTURE_DOCS` | Pode aprovar codigo que viola tenancy, runtime, qualidade ou seguranca |
+| Ignorar `SPECIALIZED_DOCS` | Pode aprovar UI que quebra tokens, temas, contraste ou padroes canonicos |
 | Comparar execucao sem ler o plano | Nao da para medir aderencia ao que foi pedido |
 | Declarar gap de dado sem query real | Achismo com roupa de rigor |
 | Declarar UI correta sem evidencia visual quando pixels importam | Codigo nao prova render final |
 | Citar docs sem conferir codigo | Doc e contrato; codigo prova estado real |
-| Citar codigo sem conferir docs canonicos | Implementacao pode funcionar e ainda estar fora do padrao LearnHouse |
+| Citar codigo sem conferir docs canonicos | Implementacao pode funcionar e ainda estar fora do padrao do repo |
 | Concordar reflexamente | Refutacao tambem precisa de evidencia |
 | Listar dezenas de hipoteses sem veredito | Adversarialidade sem fechamento vira ruido |
 | Inventar numero, teste ou fonte | Fabricacao invalida a auditoria |

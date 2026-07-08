@@ -1,29 +1,32 @@
 # CLAUDE.md — metodologia de padronização e workflow (curado para publicação)
 
-> Extraído do CLAUDE.md de um repositório de cliente em 2026-07-07 e curado para repo PÚBLICO:
-> blocos de infra/produção, credenciais e contexto comercial do cliente foram REMOVIDOS.
+> Extraído de um CLAUDE.md de origem privada em 2026-07-07 e curado para repo PÚBLICO:
+> blocos de infra/produção, credenciais e contexto comercial foram REMOVIDOS.
 > Mantidos os blocos de metodologia: wiki Karpathy temporal (repo-wide), council Codex-native
 > com adversarial loops por subagent, LEI ZERO (não reinventar), §14 consistência DRY,
 > §15 workflow orchestration (Boris Cherny) e §16 self-improvement loop (lessons.md + hooks).
 
 ## ⭐ REFERÊNCIA CANÔNICA — Repo Wiki / Documentação = Karpathy temporal
 
-**A wiki Karpathy é do REPOSITÓRIO INTEIRO, não só do design-system.** O objetivo é reduzir erro de agente causado por documento ambíguo, antigo ou lixo misturado com verdade atual.
+**A wiki Karpathy é do REPOSITÓRIO INTEIRO, não só de uma categoria especializada.** O objetivo é reduzir erro de agente causado por documento ambíguo, antigo ou lixo misturado com verdade atual.
 
 - **Constituição:** `docs/SCHEMA.md` define naming, status, indexação temporal, ingest/query/lint/prune e política "git é o arquivo".
 - **Naming obrigatório para docs novos:** `kebab-case` minúsculo; `living` sem data (`slug.md`), `event` com data-prefixo (`YYYY-MM-DD-slug.md`), `sequenced` numerado (`NNNN-slug.md`). FULL-CAPS/Title-Case são dívida a migrar sequencialmente.
 - **Indexação temporal:** todo doc entra no índice da categoria e no `docs/log.md`; coleções coesas podem ser indexadas por diretório explícito + `README.md` interno.
-- **Skill:** `repo-wiki-curator` substitui `design-system-wiki-ingest`. Use para qualquer curadoria de `docs/`: planos, auditorias, architecture, commercial, developers, reuniões, qa-evidence e design-system.
-- **Guard:** `python3 scripts/docs-wiki-lint.py` é o lint canônico repo-wide; `python3 scripts/docs-wiki-lint.py --scope design-system` é o scope especializado. O script antigo `design-system-wiki-lint.py` é só wrapper de compatibilidade.
+- **Skill:** `repo-wiki-curator` substitui skills antigas de escopo estreito. Use para qualquer curadoria de `docs/`: planos, auditorias, arquitetura, produto, desenvolvedores, reuniões e evidências.
+- **Guard:** `python3 scripts/docs-wiki-lint.py` é o lint canônico repo-wide; `python3 scripts/docs-wiki-lint.py --scope <LEGACY_WIKI_SCOPE>` é um scope especializado quando configurado. Wrappers antigos devem ler `LEGACY_WIKI_SCOPE` do config.
 - **Loop:** `.claude/loop.md` roda curadoria contínua do repo inteiro. Naming warnings são backlog incremental; órfão sem índice é falha.
 
-## ⭐ REFERÊNCIA CANÔNICA — LearnHouse Codex-native Council
+## ⭐ REFERÊNCIA CANÔNICA — Repo-native Delivery Council
 
-**Para tarefas complexas no LearnHouse, o fluxo operacional canônico no Codex é repo-native: `AGENTS.md` + `.agents/skills` + `.codex/agents` + prompts explícitos. Não usar Agents SDK, Codex MCP server, runner Python, traces/evals programáticos ou `OPENAI_API_KEY` como base do MVP dentro da extensão Codex no VS Code.**
+**Para tarefas complexas, o fluxo operacional canônico no Codex é repo-native: `AGENTS.md` + `.agents/skills` + `.codex/agents` + prompts explícitos. Não usar Agents SDK, Codex MCP server, runner Python, traces/evals programáticos ou `OPENAI_API_KEY` como base do MVP dentro da extensão Codex no VS Code.**
 
-- **Skill orquestradora:** `$learnhouse-delivery-council` em `.agents/skills/learnhouse-delivery-council/SKILL.md`.
+- **Config central:** `docs-tooling.conf` define `DELIVERY_COUNCIL_SKILL`, `ADVERSARIAL_REVIEW_SKILL`,
+  `CLARIFICATION_PLAN_SKILL` e os nomes de subagents (`*_AGENT`).
+- **Skill orquestradora:** `$delivery-council` em `.agents/skills/delivery-council/SKILL.md`.
 - **Skills de apoio:** `$clarification-plan` para decisões D[n] com consequências concretas; `$adversarial-review` para verificar plano × execução × docs × código × testes.
-- **Custom agents de subagent:** `.codex/agents/learnhouse-context-scout.toml`, `learnhouse-implementer.toml`, `learnhouse-adversarial-reviewer.toml`, `learnhouse-test-auditor.toml`.
+- **Custom agents de subagent:** nomes definidos por `CONTEXT_SCOUT_AGENT`, `IMPLEMENTER_AGENT`,
+  `ADVERSARIAL_REVIEWER_AGENT` e `TEST_AUDITOR_AGENT`.
 - **Config do projeto:** `.codex/config.toml` mantém `project_doc_max_bytes = 65536` para evitar truncamento da cadeia `~/.codex/AGENTS.md` + `AGENTS.md`, e `[agents] max_threads = 4` / `max_depth = 1` para controlar fan-out. Não aumentar profundidade sem justificativa, porque subagents consomem mais tokens/latência e podem criar fan-out recursivo.
 
 Fluxo mínimo para tarefa de risco médio/alto:
@@ -37,7 +40,7 @@ Fluxo mínimo para tarefa de risco médio/alto:
 
 **Adversarial Verification Loop (obrigatório para risco médio/alto):**
 
-- Disparar um SUBAGENT `learnhouse-adversarial-reviewer` (Claude: Agent tool; Codex: custom agent thread) contra plano, diff, docs, código real e evidências. Review adversarial NUNCA roda inline no contexto principal — self-review de quem produziu o diff não é adversarial e as leituras estouram o contexto; `$adversarial-review` é o CONTRATO do prompt do subagent. Rodada N+1 pode continuar o MESMO subagent (SendMessage) com as correções aplicadas; o relatório atribui cada rodada ao executor (linha `REVISORES:`).
+- Disparar um SUBAGENT definido por `ADVERSARIAL_REVIEWER_AGENT` (Claude: Agent tool; Codex: custom agent thread) contra plano, diff, docs, código real e evidências. Review adversarial NUNCA roda inline no contexto principal — self-review de quem produziu o diff não é adversarial e as leituras estouram o contexto; `$adversarial-review` é o CONTRATO do prompt do subagent. Rodada N+1 pode continuar o MESMO subagent (SendMessage) com as correções aplicadas; o relatório atribui cada rodada ao executor (linha `REVISORES:`).
 - O revisor deve terminar com `ADVERSARIAL-VERIFICATION: SATISFEITO`, `CORRIGIR` ou `BLOQUEADO`, listando gaps por severidade.
 - Se houver gap `REAL` de severidade `BLOQUEANTE` ou `ALTA`, corrigir sequencialmente e rodar nova verificação.
 - Repetir até no máximo **3 rodadas** ou até o revisor declarar `SATISFEITO`.
@@ -50,7 +53,7 @@ Fluxo mínimo para tarefa de risco médio/alto:
 Use bloco `ARGS:` no prompt. Custom agents Codex não recebem argumentos formais como função; os argumentos são contrato textual obrigatório.
 
 ```text
-Use $learnhouse-delivery-council.
+Use $delivery-council.
 
 ARGS:
 START_AT=EXECUTION | PLANNING | PLAN_REVIEW | AUTO
@@ -78,7 +81,7 @@ TASK:
 - Máximo **2 rodadas**.
 - O plano deve explicitar opções, delta de qualidade, delta de custo, breakeven, condição de não-adoção e decisão escolhida.
 - Em `START_AT=PLAN_REVIEW`, revisar o plano existente como fonte de verdade inicial; se houver gap crítico corrigível, ajustar somente o plano necessário para torná-lo executável, sem voltar para discovery/planejamento amplo.
-- Cada rodada é executada por SUBAGENT `learnhouse-adversarial-reviewer` (nunca inline pelo agente principal), mesma regra do Verification Loop; a rodada 2 pode continuar o mesmo subagent via SendMessage.
+- Cada rodada é executada por SUBAGENT definido por `ADVERSARIAL_REVIEWER_AGENT` (nunca inline pelo agente principal), mesma regra do Verification Loop; a rodada 2 pode continuar o mesmo subagent via SendMessage.
 - O revisor deve terminar com `PLAN-ADVERSARIAL-VERIFICATION: SATISFEITO | REPLANEJAR | BLOQUEADO`.
 - Se vier `REPLANEJAR` com gap crítico corrigível, revisar o plano e rodar a segunda rodada.
 - Ao final, reportar `PLAN-ADVERSARIAL-LOOP: <n>/2 rodadas, status: <SATISFEITO|PENDENTE|BLOQUEADO>`.
@@ -111,7 +114,7 @@ Default absoluto: portar e reaproveitar. Implementar do zero é exceção, não 
 
 ## 14. Consistência Antes de Alteração — DRY e Anti-Sobrecorreção
 
-Aplica-se a qualquer mudança **transversal** (cross-cutting): safe-area/padding, responsividade, tokens de design, tratamento de estado, formatação, error handling — qualquer padrão que se repita em múltiplas telas/arquivos. NÃO se aplica a fix pontual de um único arquivo sem equivalente em outros lugares.
+Aplica-se a qualquer mudança **transversal** (cross-cutting): safe-area/padding, responsividade, tokens visuais, tratamento de estado, formatação, error handling — qualquer padrão que se repita em múltiplas telas/arquivos. NÃO se aplica a fix pontual de um único arquivo sem equivalente em outros lugares.
 
 **Veredicto operacional:** antes de propor um padrão novo, provar qual padrão já existe. Inferir um tratamento "da cabeça" e aplicá-lo gera inconsistência e dívida de manutenção. Replica-se o que o código já adota — não o que parece razoável. Proibida a frase "o ideal seria [X]" sem antes provar, com path + linha, se [X] já é o padrão de fato.
 
@@ -179,6 +182,5 @@ Ciclo: **capturar → injetar → promover → consolidar**. O objetivo é a tax
 - **Capturar (obrigação do agente):** após QUALQUER correção do Augusto (veredicto "Errado.", abordagem revertida, ponto cego apontado, review adversarial derrubando algo meu) → append IMEDIATO em `tasks/lessons.md` no formato `## [data] sintoma → regra` (2-4 linhas, padrão concreto, não desabafo). Não esperar o fim da sessão.
 - **Injetar (hook, determinístico):** SessionStart roda `.claude/hooks/lessons-inject.sh` → as lições entram no contexto de TODA sessão nova. Reler antes de tarefa do mesmo domínio.
 - **Promover (anti-recorrência):** lição que se repete 2× → vira (a) regra permanente na seção apropriada deste CLAUDE.md, ou (b) hook executável via plugin `hookify` (guard determinístico > instrução em prosa). Lição promovida é marcada `[PROMOVIDA → destino]` no lessons.md.
-- **Consolidar (manutenção):** skill `claude-md-management:revise-claude-md` sob demanda; `/loop` sem argumentos roda o loop de manutenção de `.claude/loop.md` (lint da documentação do repo inteiro via `scripts/docs-wiki-lint.py`, ds-gate, lessons pendentes de promoção, árvore git suja).
+- **Consolidar (manutenção):** skill `claude-md-management:revise-claude-md` sob demanda; `/loop` sem argumentos roda o loop de manutenção de `.claude/loop.md` (lint da documentação do repo inteiro via `scripts/docs-wiki-lint.py`, gates especializados configurados, lessons pendentes de promoção, árvore git suja).
 - **Iterar impiedosamente** (Boris §3): se a mesma correção aparecer 3×, o problema é a REGRA mal escrita — reescrever a regra, não re-anotar o sintoma.
-

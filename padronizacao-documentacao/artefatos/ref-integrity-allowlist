@@ -2,7 +2,7 @@
 # São AUTO-OUTPUT regenerável de geradores ou backup manual do usuário: a "ausência" no
 # tree é esperada (regeneram ao rodar) e NÃO é referência quebrada de terceiro. 1 termo/linha.
 
-# saídas auto-declaradas dos geradores (apps/web/scripts/{classname-miner,inventory,triage}.mjs)
+# saídas auto-declaradas dos geradores configurados no repo
 classname-token-mining.md
 classname-token-mining.json
 inventory.json
@@ -18,6 +18,6 @@ classname-token-mining copy.json
 context.txt
 
 # nota que EXPLICA a própria deleção (byte-idêntico), não ref navegável
-proposta-comercial-<cliente>.pdf
+proposta-comercial-<account>.pdf
 # artefato de execução histórico citado em comando de plano executado (2026-05-31)
 circular.baseline.txt

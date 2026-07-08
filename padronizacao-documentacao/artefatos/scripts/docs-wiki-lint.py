@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lint da wiki Karpathy do REPOSITÓRIO inteiro (docs/), não só design-system.
+"""Lint da wiki Karpathy do REPOSITÓRIO inteiro (docs/), não só uma categoria especializada.
 
 Regras (docs/SCHEMA.md):
 - FAIL: todo .md não-estrutural precisa estar citado individualmente ou coberto por uma coleção
@@ -11,7 +11,7 @@ Regras (docs/SCHEMA.md):
 
 Uso:
   python3 scripts/docs-wiki-lint.py                 # repo inteiro (docs/)
-  python3 scripts/docs-wiki-lint.py --scope design-system   # só uma categoria (usado por gates)
+  python3 scripts/docs-wiki-lint.py --scope <categoria>     # só uma categoria (usado por gates)
   python3 scripts/docs-wiki-lint.py --strict-naming # naming também bloqueia
   python3 scripts/docs-wiki-lint.py --worktree      # diff local vs HEAD
   python3 scripts/docs-wiki-lint.py --staged        # diff staged/pre-commit
@@ -110,11 +110,11 @@ FOREIGN_LIVE_FORBIDDEN = ("_arquivo/",)
 
 
 def check_no_foreign_live_links(base: Path) -> list[str]:
-    """Índice vivo (`index.md`) que linka `_arquivo/`. Padrão portado do slim-shape, onde é FAIL
-    (lá o índice nunca aponta para o arquivo). No learnhouse é **WARN**: os índices usam links a
-    `_arquivo/` como WAYFINDING rotulado ("históricos/superados/reuniões passadas →" / "prova em"),
-    que é prática Karpathy correta — falso-FAIL treinaria o time a ignorar o gate. WARN surfacia
-    para o olho humano na curadoria sem quebrar o verde. `log.md` isento (registro do que saiu)."""
+    """Índice vivo (`index.md`) que linka `_arquivo/`.
+
+    Em alguns repos isso pode ser FAIL; neste template fica WARN porque índices podem usar links a
+    `_arquivo/` como wayfinding rotulado ("históricos", "superados", "prova em"). WARN surfacia para
+    o olho humano na curadoria sem quebrar o verde. `log.md` é isento por ser registro temporal."""
     errs: list[str] = []
     for idx in sorted(base.rglob("index.md")):
         if any(part in IGNORED_DIRS for part in idx.relative_to(DOCS).parts):

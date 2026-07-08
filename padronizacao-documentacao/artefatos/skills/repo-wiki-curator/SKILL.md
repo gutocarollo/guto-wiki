@@ -1,6 +1,6 @@
 ---
 name: repo-wiki-curator
-description: Use para indexar, curar, auditar, renomear e reorganizar QUALQUER documentação do repositório LearnHouse (não só design-system) no padrão Karpathy LLM Wiki temporal. Cobre planos, auditorias, ADRs, arquitetura, design-system, commercial, developers, reuniões, qa-evidence. Aciona quando a tarefa mencionar: curadoria de docs, indexação temporal, naming de arquivos, documento órfão/ambíguo, doc legado vs atual, limpar docs/, Karpathy, LLM wiki.
+description: Use para indexar, curar, auditar, renomear e reorganizar QUALQUER documentação do repositório no padrão Karpathy LLM Wiki temporal. Cobre planos, auditorias, ADRs, arquitetura, produto, desenvolvedores, reuniões e evidências. Aciona quando a tarefa mencionar: curadoria de docs, indexação temporal, naming de arquivos, documento órfão/ambíguo, doc legado vs atual, limpar docs/, Karpathy, LLM wiki.
 ---
 
 # Repo Wiki Curator
@@ -10,9 +10,9 @@ Curadoria contínua da documentação do repositório inteiro. Objetivo estraté
 
 ## Escopo
 
-Todo `docs/` — `planos/`, `auditorias/`, `adr/`, `architecture/`, `design-system/`, `commercial/`,
-`developers/`, `reunioes/`, `qa-evidence/`, `_arquivo/`. Não é só design-system (esse é apenas uma
-categoria, com sub-schema próprio em `docs/design-system/SCHEMA.md`).
+Todo `docs/` — categorias vivas, auditorias, ADRs, arquitetura, produto, desenvolvedores, reuniões,
+evidências e arquivo histórico. Não é só uma categoria especializada; quando houver sub-schema próprio,
+ele deve estar apontado por `SPECIALIZED_SCHEMA` em `docs-tooling.conf`.
 
 ## Contrato
 
@@ -42,7 +42,7 @@ categoria, com sub-schema próprio em `docs/design-system/SCHEMA.md`).
    (detector git-aware de refs órfãs; protocolo de correção na skill `ref-integrity`) — é o guard que
    pega a citação esquecida que o `grep -rl` manual deixou passar.
 4. Atualize `index.md` (categoria) + `docs/log.md` (`## [YYYY-MM-DD] tipo · categoria`, append-only).
-5. Sub-wiki densa (design-system): atualize também `wiki/` e o SCHEMA especializado.
+5. Sub-wiki densa/categoria especializada: atualize também `wiki/` e o SCHEMA especializado configurado.
 6. Prune o superseded/resolvido (git rm) e registre no log.
 7. `python3 scripts/docs-wiki-lint.py` — deve ficar verde (ou justificar exceção no próprio script).
    Use `--worktree` durante revisão local, `--staged` antes do commit e `--diff-base <ref>` em CI/PR

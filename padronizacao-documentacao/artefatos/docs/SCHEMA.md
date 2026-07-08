@@ -1,8 +1,9 @@
 # SCHEMA.md — como a wiki/documentação do REPOSITÓRIO funciona
 
-> Padrão: **Karpathy LLM Wiki** (gist 442a6bf), no nível do **repositório inteiro** — não só design-system.
-> Esta é a constituição da curadoria documental do LearnHouse. `docs/design-system/SCHEMA.md` é uma
-> especialização desta (regras extras de tokens/cor); em conflito, esta vence no que é transversal.
+> Padrão: **Karpathy LLM Wiki** (gist 442a6bf), no nível do **repositório inteiro** — não só de uma
+> categoria especializada.
+> Esta é a constituição da curadoria documental do repo. Um sub-schema especializado pode existir
+> no path `SPECIALIZED_SCHEMA` de `docs-tooling.conf`; em conflito, esta vence no que é transversal.
 
 ## 0. Objetivo estratégico (por que isto existe)
 
@@ -16,8 +17,8 @@ do código:
 - **Boris Cherny / self-improvement loop** (`.claude/loop.md`, `tasks/lessons.md`, CLAUDE.md §16): a
   curadoria roda em **loop contínuo**, não em mutirões pontuais.
 - **Config central:** `docs-tooling.conf` centraliza paths de documentação, lints, hooks e
-  Understand/Anything LLM. Não espalhe paths como `apps/.understand-anything/` ou docs incrementais em
-  skills; referencie as chaves `UNDERSTAND_*`.
+  Understand/Anything LLM. Não espalhe paths de grafo, código ou docs incrementais em skills; referencie
+  as chaves `UNDERSTAND_*`, `CODE_ROOTS`, `ARCHITECTURE_*` e `SPECIALIZED_*`.
 - **understand-anything** (`UNDERSTAND_GRAPH_DIR` em `docs-tooling.conf`): grafo de código para blast radius
   e para cruzar doc↔código.
 
@@ -26,12 +27,11 @@ A curadoria é **contínua e automatizada**, não um evento. Cada sessão deixa 
 ## 1. Três camadas (por categoria de `docs/`)
 
 1. **Índices** — `docs/index.md` (catálogo por categoria, orientado a conteúdo) + `docs/log.md` (cronológico
-   append-only, orientado a tempo). Cada categoria (`planos/`, `auditorias/`, `adr/`, `architecture/`,
-   `design-system/`, `commercial/`, `developers/`, `reunioes/`, `qa-evidence/`) tem seu próprio índice —
-   `index.md` **ou** um `README.md` de coleção (ex.: `architecture/README.md`, `developers/README.md`); o
+   append-only, orientado a tempo). Cada categoria tem seu próprio índice —
+   `index.md` **ou** um `README.md` de coleção; o
    lint aceita ambos.
-2. **Conteúdo curado** — os `.md` de cada categoria, com a VERDADE ATUAL. Sub-wikis (`design-system/wiki/`)
-   quando a categoria é densa o bastante para ter páginas-verdade separadas das fontes brutas.
+2. **Conteúdo curado** — os `.md` de cada categoria, com a VERDADE ATUAL. Sub-wikis quando uma categoria é
+   densa o bastante para ter páginas-verdade separadas das fontes brutas.
 3. **Schema** — este arquivo + os SCHEMA especializados por categoria + os blocos ⭐ no `.claude/CLAUDE.md`.
 
 ## 2. Naming standard (obrigatório para docs novos; migração incremental para os antigos)
@@ -44,7 +44,7 @@ Exceção única: marcadores convencionais que a comunidade espera em maiúscula
 
 | Classe | Formato | Quando | Exemplos (padrão que o repo já acerta) |
 |---|---|---|---|
-| **living** (verdade atual, editado in-place) | `slug.md` **sem data** | wiki pages, specs vivas, tracking, glossário, decisões vivas | `multi-tenancy.md`, `design-system.md`, `w3c-design-tokens.md` |
+| **living** (verdade atual, editado in-place) | `slug.md` **sem data** | wiki pages, specs vivas, tracking, glossário, decisões vivas | `multi-tenancy.md`, `tema.md`, `tokens.md` |
 | **event** (foto de um momento, imutável depois) | `YYYY-MM-DD-slug.md` **data-PREFIXO** | auditorias, execuções, relatórios de sessão, atas, evidências | `2026-07-04-auditoria-tokens.md`, `2026-06-24-audit-visual-motion/` (qa-evidence já faz) |
 | **sequenced** (numeração estável) | `NNNN-slug.md` | ADRs (Nygard), capítulos ordenados | `0001-use-open-source-lms-base.md`, `07-conceitos-transversais.md` (adr/arc42 já fazem) |
 
@@ -60,7 +60,7 @@ metadata — renomear ao atualizar quebraria links); **event** = post datado est
 title: Título humano curto
 status: canon | active | superseded | historico | proposta
 updated: YYYY-MM-DD          # frescor; para living docs é a verdade da data, não o nome do arquivo
-scope: <categoria>           # design-system | architecture | planos | auditorias | ...
+scope: <categoria>           # architecture | planos | auditorias | produto | ...
 ---
 ```
 
@@ -105,8 +105,9 @@ e o `status` diz qual vale. Sem isso, a IA (e o humano) escolhem no escuro.
 - Config central: `docs-tooling.conf` (`DOCS_ROOT`, `DOCS_INDEX`, `DOCS_LOG`, `DOCS_WIKI_LINT`,
   `REF_INTEGRITY`, `UNDERSTAND_*`, `IGNORED_TOOL_DIRS`).
 - Loop contínuo: `.claude/loop.md` (curadoria do repo inteiro).
-- Sub-schema especializado: `docs/design-system/SCHEMA.md` (pares coloridos, mining className).
-- Fonte da verdade do CÓDIGO (não é doc): `apps/web/styles/globals.css`, migrations, os próprios fontes.
+- Sub-schema especializado: `SPECIALIZED_SCHEMA` em `docs-tooling.conf`, quando o repo tiver uma categoria
+  que precise de regras próprias.
+- Fonte da verdade do CÓDIGO (não é doc): `CODE_ROOTS` em `docs-tooling.conf`, migrations e os próprios fontes.
 - Grafos como Understand Anything ajudam a navegar relações e blast radius, mas não substituem fonte viva.
   Toda conclusão operacional deve voltar a código, índices/logs e dados/evidências do repo antes de virar
   decisão ou documentação canônica.

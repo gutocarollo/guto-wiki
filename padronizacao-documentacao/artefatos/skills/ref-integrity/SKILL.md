@@ -1,6 +1,6 @@
 ---
 name: ref-integrity
-description: Use para detectar REFERÊNCIAS QUEBRADAS a arquivos renomeados ou deletados no repo LearnHouse — links markdown que não resolvem e citações vivas a nomes/paths antigos em md/json/txt/py/sh/toml/css. Aciona quando a tarefa mencionar: renomeei/movi/deletei arquivos e quero achar refs órfãs, verificar links quebrados, validar integridade após curadoria/rename em massa, ou revisar um range de commits. Fonte única `scripts/ref-integrity.py`; também roda como pre-commit e no loop.
+description: Use para detectar REFERÊNCIAS QUEBRADAS a arquivos renomeados ou deletados no repo — links markdown que não resolvem e citações vivas a nomes/paths antigos em md/json/txt/py/sh/toml/css. Aciona quando a tarefa mencionar: renomeei/movi/deletei arquivos e quero achar refs órfãs, verificar links quebrados, validar integridade após curadoria/rename em massa, ou revisar um range de commits. Fonte única `scripts/ref-integrity.py`; também roda como pre-commit e no loop.
 ---
 
 # Ref Integrity
