@@ -10,11 +10,13 @@ append-only `## [YYYY-MM-DD] tipo · categoria`) está especificado em `docs/SCH
 
 | Arquivo | Path original | Papel |
 |---|---|---|
+| `docs-tooling.conf` | `docs-tooling.conf` | Config central de paths de documentação, lints, hooks, CI e Understand/Anything LLM (`DOCS_*`, `REF_INTEGRITY*`, `UNDERSTAND_*`, `IGNORED_TOOL_DIRS`) |
 | `docs/SCHEMA.md` | `docs/SCHEMA.md` | Constituição da wiki Karpathy repo-wide: naming por classe temporal (`living` = slug sem data, `event` = `YYYY-MM-DD-slug`, `sequenced` = `NNNN-slug`), frontmatter de `status`, indexação temporal, ciclo ingest/query/lint/prune e política "git é o arquivo" |
-| `scripts/docs-wiki-lint.py` | `scripts/` | Lint determinístico da wiki: doc órfão sem menção em índice/log = FAIL; naming fora do §2 = WARN (migração incremental, `--strict-naming` bloqueia); cobre não-markdown |
+| `scripts/docs-wiki-lint.py` | `scripts/` | Lint determinístico da wiki: doc órfão sem menção em índice/log = FAIL; naming fora do §2 = WARN; cobre não-markdown; valida log/frontmatter/tags soltas; modo diff-aware com `--worktree`, `--staged` e `--diff-base` |
 | `scripts/ref-integrity.py` | `scripts/` | Integridade referencial git-aware de renames/deletes: links markdown mortos + citações vivas a nomes antigos. FONTE ÚNICA com 3 consumidores (`--staged` / `--range` / `--since`) |
 | `scripts/design-system-wiki-lint.py` | `scripts/` | Shim de compatibilidade do lint antigo (exemplo de migração de escopo sem quebrar chamadores) |
 | `githooks/pre-commit` | `.githooks/pre-commit` | Consumidor 1 do ref-integrity: bloqueia commit com referência quebrada (`--staged`, resolve contra o INDEX). Ativar com `git config core.hooksPath .githooks` |
+| `pre-commit-config.yaml` | `.pre-commit-config.yaml` | Config alternativa para usuários de `pre-commit`: roda docs-wiki-lint staged/global e ref-integrity staged |
 | `skills/ref-integrity/SKILL.md` | `.claude/skills/` | Consumidor 2: skill invocável (`--range A..B`) com protocolo de correção (repoint / desativar / allowlist; nunca sed cego) |
 | `loop.md` | `.claude/loop.md` | Consumidor 3 + loop de manutenção contínua estilo Boris: lint da wiki, ref-integrity `--since` (backstop de `--no-verify`), lessons a promover, árvore git suja |
 | `ref-integrity-allowlist` | `.ref-integrity-allowlist` | Exceções determinísticas: auto-output de geradores e backups cuja "ausência" é esperada |
@@ -23,5 +25,5 @@ append-only `## [YYYY-MM-DD] tipo · categoria`) está especificado em `docs/SCH
 | `skills/adversarial-review/SKILL.md` | `.claude/skills/` | Contrato da review adversarial (classes de prova por hipótese); self-review inline proibido — vira o prompt do subagent |
 | `hooks/lessons-inject.sh` | `.claude/hooks/` | SessionStart hook: injeta `tasks/lessons.md` em toda sessão nova (self-improvement §16) |
 | `tasks/lessons.md` | `tasks/` | Exemplo real do ciclo capturar → injetar → promover (lições `[PROMOVIDA → destino]`) |
-| `github-workflows/docs-integrity.yaml` | `.github/workflows/docs-integrity.yaml` | Consumidor 4 (CI): backstop de `--no-verify`/clone sem hook — roda wiki-lint + `ref-integrity --selftest` + range do push |
+| `github-workflows/docs-integrity.yaml` | `.github/workflows/docs-integrity.yaml` | Consumidor 4 (CI): backstop de `--no-verify`/clone sem hook — roda wiki-lint global + diff-aware, `ref-integrity --selftest` + range do push |
 | `CLAUDE.md` | `.claude/CLAUDE.md` | Curado para publicação: bloco wiki Karpathy, bloco council, LEI ZERO (não reinventar), §14 consistência DRY, §15 workflow orchestration (Boris Cherny), §16 self-improvement loop |

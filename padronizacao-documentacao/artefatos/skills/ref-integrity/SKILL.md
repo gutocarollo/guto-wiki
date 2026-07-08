@@ -45,8 +45,9 @@ code fence (` ``` `) é exemplo — não flaga (`blank_code_fences`); link com e
 
 ## Fontes isentas (por design, não reportadas)
 
-`docs/_arquivo/`, `docs/adr/`, `docs/auditorias/`, `docs/qa-evidence/` (snapshots/imutáveis), `**/log.md`
-(append-only), `apps/.understand-anything/` e `.trash-*` (scratch). São registro histórico: citação a nome
+`docs/_arquivo/` (ou `REF_INTEGRITY_ARCHIVE_PREFIXES` em `docs-tooling.conf`), `docs/adr/`,
+`docs/auditorias/`, `docs/qa-evidence/` (snapshots/imutáveis), `**/log.md` (append-only),
+diretórios em `IGNORED_TOOL_DIRS` como `.understand-anything/` e `.trash-*` (scratch). São registro histórico: citação a nome
 antigo ali é legítima.
 
 ## Guardrail

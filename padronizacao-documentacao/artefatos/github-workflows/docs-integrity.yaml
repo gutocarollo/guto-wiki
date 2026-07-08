@@ -33,6 +33,19 @@ jobs:
           python-version: '3.12'
       - name: Wiki lint (órfãos sem índice + naming §2 + wayfinding)
         run: python3 scripts/docs-wiki-lint.py
+      - name: Wiki lint diff-aware
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if [[ -n "$BASE" && "$BASE" != "0000000000000000000000000000000000000000" ]]; then
+            python3 scripts/docs-wiki-lint.py --diff-base "$BASE"
+          else
+            python3 scripts/docs-wiki-lint.py
+          fi
       - name: Ref-integrity — self-test do detector
         run: python3 scripts/ref-integrity.py --selftest
       - name: Ref-integrity — refs quebradas nos commits do push

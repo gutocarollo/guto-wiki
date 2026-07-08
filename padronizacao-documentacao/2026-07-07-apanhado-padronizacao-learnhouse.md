@@ -32,13 +32,16 @@ determinísticos** — não um mutirão pontual.
 | 2026-07-07 (tarde) | **ref-integrity**: varredura git-aware achou 38 refs quebradas por rename/delete (zeradas); ferramenta de fonte única com 3 consumidores; allowlist determinística; lint ganhou WARN de data-em-sufixo | `scripts/ref-integrity.py`, `githooks/pre-commit`, skill `ref-integrity`, `loop.md` check 6, `ref-integrity-allowlist` |
 | 2026-07-07 (noite) | **Adversarial loops por subagent OBRIGATÓRIO** no council (self-review inline proibido; rodada N+1 continua o mesmo subagent; relatório atribui executor via linha `REVISORES:`) | skills `learnhouse-delivery-council` + `adversarial-review`, blocos council do CLAUDE.md/AGENTS.md |
 | 2026-07-07 (esta análise) | **Fix de linkagem**: a skill de curadoria não citava o ref-integrity — corrigido em 3 pontos (validação pós-rename, gate verde, saída esperada) | skill `repo-wiki-curator` (passos 3 e 7 + saída) |
+| 2026-07-08 | **Camada diff-aware/generalizada**: política `--worktree`/`--staged`/`--diff-base`, CI com histórico completo, configs centrais, cache Understand ignorado e regra "grafo acelera navegação, não substitui fonte viva" | `scripts/wiki-lint.py` nesta wiki + artefatos `docs-tooling.conf`, `docs-wiki-lint.py`, `docs/SCHEMA.md`, `github-workflows/docs-integrity.yaml`, `pre-commit-config.yaml`, `repo-wiki-curator` |
 
 ## 3. Mapa de artefatos
 
-Quinze arquivos, mapa detalhado (papel + path original) em [`artefatos/README.md`](artefatos/README.md):
-constituição ([`docs/SCHEMA.md`](artefatos/docs/SCHEMA.md)) · lints ([`docs-wiki-lint.py`](artefatos/scripts/docs-wiki-lint.py),
+Dezessete arquivos, mapa detalhado (papel + path original) em [`artefatos/README.md`](artefatos/README.md):
+config central ([`docs-tooling.conf`](artefatos/docs-tooling.conf)) · constituição
+([`docs/SCHEMA.md`](artefatos/docs/SCHEMA.md)) · lints ([`docs-wiki-lint.py`](artefatos/scripts/docs-wiki-lint.py),
 [`ref-integrity.py`](artefatos/scripts/ref-integrity.py), shim) · consumidores ([`githooks/pre-commit`](artefatos/githooks/pre-commit),
-[skill ref-integrity](artefatos/skills/ref-integrity/SKILL.md), [`loop.md`](artefatos/loop.md)) ·
+[`pre-commit-config.yaml`](artefatos/pre-commit-config.yaml), [skill ref-integrity](artefatos/skills/ref-integrity/SKILL.md),
+[`loop.md`](artefatos/loop.md)) ·
 [`ref-integrity-allowlist`](artefatos/ref-integrity-allowlist) · skills de processo
 ([curator](artefatos/skills/repo-wiki-curator/SKILL.md), [council](artefatos/skills/learnhouse-delivery-council/SKILL.md),
 [adversarial-review](artefatos/skills/adversarial-review/SKILL.md)) · self-improvement
@@ -109,15 +112,19 @@ e a allowlist determinística.
 
 ## 6. Como portar para um repositório novo
 
-1. Copiar [`artefatos/docs/SCHEMA.md`](artefatos/docs/SCHEMA.md) e ajustar as categorias de `docs/`.
-2. Criar `docs/index.md` (catálogo) + `docs/log.md` (cronológico append-only `## [YYYY-MM-DD] tipo · categoria`).
-3. Copiar `scripts/docs-wiki-lint.py`; ajustar `GENERIC_DIRS`/`CAPS_OK`/`IGNORED_DIRS`.
-4. Copiar `scripts/ref-integrity.py` + `.ref-integrity-allowlist` (começar vazia).
-5. Copiar `.githooks/pre-commit` e ativar com `git config core.hooksPath .githooks` (bootstrap
-   idempotente no script de setup/doctor do repo).
-6. Copiar as skills (`repo-wiki-curator`, `ref-integrity`) e um `loop.md` de manutenção contínua.
-7. Criar `tasks/lessons.md` + hook SessionStart de injeção; adotar §15/§16 do
+1. Copiar [`artefatos/docs-tooling.conf`](artefatos/docs-tooling.conf) e ajustar `DOCS_*`,
+   `REF_INTEGRITY*`, `UNDERSTAND_*` e `IGNORED_TOOL_DIRS` para o repo destino.
+2. Copiar [`artefatos/docs/SCHEMA.md`](artefatos/docs/SCHEMA.md) e ajustar as categorias de `docs/`.
+3. Criar `docs/index.md` (catálogo) + `docs/log.md` (cronológico append-only `## [YYYY-MM-DD] tipo · categoria`).
+4. Copiar `scripts/docs-wiki-lint.py`; ajustar `GENERIC_DIRS`/`CAPS_OK`/`IGNORED_DIRS` se o config não bastar.
+5. Copiar `scripts/ref-integrity.py` + `.ref-integrity-allowlist` (começar vazia).
+6. Copiar `.githooks/pre-commit` e ativar com `git config core.hooksPath .githooks`, ou copiar
+   `.pre-commit-config.yaml` para times que já usam `pre-commit`.
+7. Copiar as skills (`repo-wiki-curator`, `ref-integrity`) e um `loop.md` de manutenção contínua.
+8. Criar `tasks/lessons.md` + hook SessionStart de injeção; adotar §15/§16 do
    [`CLAUDE.md` curado](artefatos/CLAUDE.md).
+9. Adicionar CI com `fetch-depth: 0` e rodar `docs-wiki-lint.py` global + `--diff-base`, para que push/PR
+   cobrem log/índice quando Markdown novo, movido ou removido entrar.
 
 ## 7. Publicação e sanitização
 

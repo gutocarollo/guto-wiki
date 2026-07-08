@@ -13,24 +13,59 @@ Uso:
   python3 scripts/docs-wiki-lint.py                 # repo inteiro (docs/)
   python3 scripts/docs-wiki-lint.py --scope design-system   # só uma categoria (usado por gates)
   python3 scripts/docs-wiki-lint.py --strict-naming # naming também bloqueia
+  python3 scripts/docs-wiki-lint.py --worktree      # diff local vs HEAD
+  python3 scripts/docs-wiki-lint.py --staged        # diff staged/pre-commit
+  python3 scripts/docs-wiki-lint.py --diff-base <ref>  # CI/PR/push
 """
 from __future__ import annotations
 
+import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DOCS = ROOT / "docs"
+
+
+def load_config() -> dict[str, str]:
+    values: dict[str, str] = {}
+    for path in (ROOT / "docs-tooling.conf", ROOT / ".docs-tooling.conf", ROOT / "wiki-tooling.conf"):
+        if not path.exists():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.split("#", 1)[0].strip()
+            if not line or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip()
+        break
+    return values
+
+
+CONF = load_config()
+
+
+def config_csv(key: str, default: set[str]) -> set[str]:
+    value = CONF.get(key)
+    if not value:
+        return set(default)
+    return {item.strip() for item in value.split(",") if item.strip()}
+
+
+DOCS = ROOT / CONF.get("DOCS_ROOT", "docs")
 
 STRUCTURAL = {"index.md", "log.md", "SCHEMA.md", "README.md"}
 CAPS_OK = {"README.md", "SCHEMA.md", "CLAUDE.md", "AGENTS.md", "LICENSE", "LICENSE.md", "PROVENANCE.md"}
 GENERIC_DIRS = {"sources", "assets", "img", "images", "reports", "docs", "_arquivo"}
-IGNORED_DIRS = {".understand-anything"}
+IGNORED_DIRS = config_csv("IGNORED_TOOL_DIRS", {".understand-anything", ".anythingllm"})
 # kebab minúsculo, com prefixo opcional de data (event) ou número (sequenced); ponto só p/ versão tipo v2.2
 NAME_RE = re.compile(r"^(\d{4}-\d{2}-\d{2}-|\d+-)?[a-z0-9]+([a-z0-9.\-]*[a-z0-9])?\.[a-z0-9]+$")
 # data (YYYY-MM-DD) presente mas NÃO como prefixo → event doc com data em sufixo (§2: deve ser prefixo)
 DATE_ANY = re.compile(r"\d{4}-\d{2}-\d{2}")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+LOG_HEADING_RE = re.compile(r"^## \[(\d{4}-\d{2}-\d{2}|sem-data)\] [^·]+ · .+")
+STRAY_TOOL_RE = re.compile(r"^\s*</(content|invoke|antml:invoke|antml:parameter)>\s*$")
 
 
 def collect_index_corpus(scope_dir: Path) -> str:
@@ -92,6 +127,108 @@ def check_no_foreign_live_links(base: Path) -> list[str]:
     return errs
 
 
+def check_log_format(base: Path) -> list[str]:
+    errs: list[str] = []
+    for log in sorted(base.rglob("log.md")):
+        if any(part in IGNORED_DIRS for part in log.relative_to(DOCS).parts):
+            continue
+        previous: str | None = None
+        headings = [line for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("## ")]
+        if not headings:
+            errs.append(f"{log.relative_to(DOCS)}: sem entradas ## [YYYY-MM-DD]")
+        for line in headings:
+            if not LOG_HEADING_RE.match(line):
+                errs.append(f"{log.relative_to(DOCS)}: heading fora do formato temporal: {line}")
+                continue
+            date = line.split("]", 1)[0].removeprefix("## [")
+            if date != "sem-data":
+                if previous and previous != "sem-data" and date > previous:
+                    errs.append(f"{log.relative_to(DOCS)}: log fora de ordem temporal decrescente: {line}")
+                previous = date
+            else:
+                previous = "sem-data"
+    return errs
+
+
+def check_frontmatter_updated(base: Path) -> list[str]:
+    errs: list[str] = []
+    for path in sorted(base.rglob("*.md")):
+        if path.name in STRUCTURAL:
+            continue
+        text = path.read_text(encoding="utf-8")
+        if not text.startswith("---\n"):
+            continue
+        end = text.find("\n---\n", 4)
+        if end == -1:
+            errs.append(f"{path.relative_to(DOCS)}: frontmatter nao fechado")
+            continue
+        frontmatter = text[4:end]
+        updated = re.search(r"^updated:\s*[\"']?([^\"'\n]+)[\"']?\s*$", frontmatter, flags=re.M)
+        if updated and not DATE_RE.match(updated.group(1)):
+            errs.append(f"{path.relative_to(DOCS)}: updated fora de YYYY-MM-DD: {updated.group(1)!r}")
+    return errs
+
+
+def check_stray_tool_tags(base: Path) -> list[str]:
+    errs: list[str] = []
+    for path in sorted(base.rglob("*.md")):
+        if any(part in IGNORED_DIRS for part in path.relative_to(DOCS).parts):
+            continue
+        for i, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+            if STRAY_TOOL_RE.match(line):
+                errs.append(f"{path.relative_to(DOCS)}:{i}: tag de ferramenta solta -> {line.strip()!r}")
+    return errs
+
+
+def git_diff_name_status(diff_base: str | None, staged: bool, worktree: bool, failures: list[str]) -> list[tuple[str, list[str]]]:
+    if not diff_base and not staged and not worktree:
+        return []
+    cmd = ["git", "diff", "--name-status", "--find-renames"]
+    if staged:
+        cmd.insert(2, "--cached")
+    elif worktree:
+        cmd.append("HEAD")
+    else:
+        cmd.append(f"{diff_base}...HEAD")
+    proc = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True)
+    if proc.returncode != 0:
+        failures.append(f"git diff falhou: {proc.stderr.strip() or proc.stdout.strip()}")
+        return []
+    entries: list[tuple[str, list[str]]] = []
+    for raw in proc.stdout.splitlines():
+        parts = raw.split("\t")
+        if len(parts) >= 2:
+            entries.append((parts[0], parts[1:]))
+    if worktree:
+        untracked = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+        )
+        entries.extend(("A", [path]) for path in untracked.stdout.splitlines() if path)
+    return entries
+
+
+def check_diff_policy(diff_base: str | None, staged: bool, worktree: bool, failures: list[str]) -> None:
+    entries = git_diff_name_status(diff_base, staged, worktree, failures)
+    if not entries:
+        return
+    docs_entries = [(status, paths) for status, paths in entries if any(path.startswith("docs/") for path in paths)]
+    if not docs_entries:
+        return
+    log_changed = any("docs/log.md" in paths for _, paths in entries)
+    index_changed = any(path.endswith(("index.md", "README.md")) and path.startswith("docs/") for _, paths in entries for path in paths)
+    for status, paths in docs_entries:
+        old_path = paths[0]
+        new_path = paths[-1]
+        if any(path.endswith(".md") for path in {old_path, new_path}) and status[0] in {"A", "D", "R"}:
+            if not log_changed:
+                failures.append(f"{new_path}: markdown novo/removido/renomeado exige atualizar docs/log.md no mesmo diff")
+            if status.startswith(("A", "R")) and not index_changed:
+                failures.append(f"{new_path}: markdown novo/renomeado exige atualizar index/README da categoria no mesmo diff")
+
+
 def naming_ok(rel: Path) -> bool:
     name = rel.name
     if name in CAPS_OK or name in {"index.md", "log.md"}:
@@ -105,11 +242,16 @@ def naming_ok(rel: Path) -> bool:
 
 
 def main() -> int:
-    args = sys.argv[1:]
-    strict_naming = "--strict-naming" in args
-    scope = None
-    if "--scope" in args:
-        scope = args[args.index("--scope") + 1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--scope")
+    parser.add_argument("--strict-naming", action="store_true")
+    parser.add_argument("--diff-base")
+    parser.add_argument("--staged", action="store_true")
+    parser.add_argument("--worktree", action="store_true")
+    args = parser.parse_args()
+
+    strict_naming = args.strict_naming
+    scope = args.scope
     base = DOCS / scope if scope else DOCS
     corpus = collect_index_corpus(base)
 
@@ -133,6 +275,10 @@ def main() -> int:
             naming_warns.append(f"naming fora do padrão §2: {rel}")
 
     foreign_warns = check_no_foreign_live_links(base)
+    failures.extend(check_log_format(base))
+    failures.extend(check_frontmatter_updated(base))
+    failures.extend(check_stray_tool_tags(base))
+    check_diff_policy(args.diff_base, args.staged, args.worktree, failures)
 
     if strict_naming:
         failures.extend(naming_warns)

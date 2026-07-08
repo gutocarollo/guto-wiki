@@ -1,0 +1,32 @@
+name: wiki-integrity
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  wiki-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Wiki lint global
+        run: python3 scripts/wiki-lint.py
+      - name: Wiki lint diff-aware
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if [[ -n "$BASE" && "$BASE" != "0000000000000000000000000000000000000000" ]]; then
+            python3 scripts/wiki-lint.py --diff-base "$BASE"
+          else
+            python3 scripts/wiki-lint.py
+          fi

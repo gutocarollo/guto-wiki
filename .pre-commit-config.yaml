@@ -1,0 +1,14 @@
+repos:
+  - repo: local
+    hooks:
+      - id: guto-wiki-lint-staged
+        name: guto wiki lint staged policy
+        entry: python3 scripts/wiki-lint.py --staged
+        language: system
+        pass_filenames: false
+
+      - id: guto-wiki-lint-global
+        name: guto wiki lint global
+        entry: python3 scripts/wiki-lint.py
+        language: system
+        pass_filenames: false

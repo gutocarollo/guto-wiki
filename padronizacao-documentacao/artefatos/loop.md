@@ -10,6 +10,8 @@ existir, a marathon tem prioridade — execute a "Próxima ação" do RUN.md e e
    `[PROMOVIDA → destino]`? Se sim, promover (regra no CLAUDE.md §apropriada ou hook via hookify) e marcar.
 2. **Wiki/documentação do repo íntegra** — `python3 scripts/docs-wiki-lint.py`. FAIL → corrigir
    `docs/index.md`, `docs/log.md` ou índice da categoria (regidos por `docs/SCHEMA.md`) e re-rodar.
+   Se houver diff local, rode também `python3 scripts/docs-wiki-lint.py --worktree` para confirmar que
+   Markdown novo/movido/removido veio com log/índice no mesmo diff.
 3. **Frescor do mining** — `bash apps/web/scripts/ds-classname-workflow-check.sh`. Stale → regenerar MD
    (`node apps/web/scripts/classname-miner-v2.mjs`), stage, e re-ingerir o Postgres
    (`bash .claude/skills/classname-token-workflow/scripts/classname-mining-ingest.sh`).

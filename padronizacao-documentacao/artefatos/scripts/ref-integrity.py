@@ -18,7 +18,7 @@ Eixo "onde-buscar" rege AMBAS as checagens: --staged usa o INDEX (git show :path
 git cat-file -e :path / git grep --cached); --range/--since usam o working tree em HEAD.
 
 Dois níveis de isenção:
-  - is_archive (check A e B): docs/_arquivo/, apps/.understand-anything/ (+.trash) — arqueologia pura.
+  - is_archive (check A e B): docs/_arquivo/, .understand-anything/ (+.trash) — arqueologia pura.
   - is_historical (só check B / stale-citation): + docs/adr/, docs/auditorias/, docs/qa-evidence/, **/log.md
     — CITAÇÃO em prosa a nome antigo é snapshot legítimo, mas LINK markdown clicável quebrado ali NÃO é
     isento (check A enforça: o índice não pode ter link morto).
@@ -73,6 +73,36 @@ def sh(args: list[str]) -> str:
 ROOT = sh(["git", "rev-parse", "--show-toplevel"]).strip()
 
 
+def load_config() -> dict[str, str]:
+    values: dict[str, str] = {}
+    for name in ("docs-tooling.conf", ".docs-tooling.conf", "wiki-tooling.conf"):
+        path = os.path.join(ROOT, name)
+        if not os.path.exists(path):
+            continue
+        for line in open(path, encoding="utf-8"):
+            line = line.split("#", 1)[0].strip()
+            if not line or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip()
+        break
+    return values
+
+
+CONF = load_config()
+
+
+def config_csv(key: str, default: set[str]) -> set[str]:
+    value = CONF.get(key)
+    if not value:
+        return set(default)
+    return {item.strip() for item in value.split(",") if item.strip()}
+
+
+ARCHIVE_PREFIXES = config_csv("REF_INTEGRITY_ARCHIVE_PREFIXES", {"docs/_arquivo/"})
+ARCHIVE_CONTAINS = config_csv("IGNORED_TOOL_DIRS", {".understand-anything", ".anythingllm", ".trash-"})
+
+
 def load_allowlist() -> set[str]:
     """Termos a ignorar globalmente (auto-output de geradores, backups). 1 por linha; '#' = comentário."""
     p = os.path.join(ROOT, ".ref-integrity-allowlist")
@@ -88,7 +118,7 @@ def load_allowlist() -> set[str]:
 def is_archive(path: str) -> bool:
     """Arqueologia pura — nem link clicável precisa resolver (docs mortos/scratch)."""
     p = path.replace("\\", "/")
-    return p.startswith("docs/_arquivo/") or ".understand-anything" in p or "/.trash-" in p
+    return any(p.startswith(prefix) for prefix in ARCHIVE_PREFIXES) or any(token in p for token in ARCHIVE_CONTAINS)
 
 
 def is_historical(path: str) -> bool:

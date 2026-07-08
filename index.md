@@ -13,3 +13,17 @@ determinísticos, integridade referencial git-aware, self-improvement loop.
   `loop.md`, skills (repo-wiki-curator, ref-integrity, delivery-council, adversarial-review),
   `hooks/lessons-inject.sh`, `tasks/lessons.md` e `CLAUDE.md` curado (workflow Boris Cherny §15 +
   self-improvement §16).
+
+## governanca-da-wiki
+
+Governança ativa deste repositório público.
+
+- [scripts/wiki-lint.py](scripts/wiki-lint.py) — lint ativo da `guto-wiki`: indexação, log temporal,
+  tags soltas, naming e política diff-aware.
+- [wiki-tooling.conf](wiki-tooling.conf) — configuração central dos paths de wiki, pacote reutilizável e
+  Understand/Anything LLM.
+- [.github/workflows/wiki-integrity.yml](.github/workflows/wiki-integrity.yml) — CI com lint global e
+  diff-aware contra a base do push/PR.
+- [.pre-commit-config.yaml](.pre-commit-config.yaml) — hooks locais equivalentes para usuários de
+  `pre-commit`.
+- [.gitignore](.gitignore) — caches de ferramentas, incluindo `.understand-anything/`, fora do versionamento.

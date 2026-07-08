@@ -15,7 +15,11 @@ do código:
 - **Karpathy LLM Wiki** (este SCHEMA + índices + lint): organização, indexação temporal, curadoria.
 - **Boris Cherny / self-improvement loop** (`.claude/loop.md`, `tasks/lessons.md`, CLAUDE.md §16): a
   curadoria roda em **loop contínuo**, não em mutirões pontuais.
-- **understand-anything** (`apps/.understand-anything/`): grafo de código para blast radius e para cruzar doc↔código.
+- **Config central:** `docs-tooling.conf` centraliza paths de documentação, lints, hooks e
+  Understand/Anything LLM. Não espalhe paths como `apps/.understand-anything/` ou docs incrementais em
+  skills; referencie as chaves `UNDERSTAND_*`.
+- **understand-anything** (`UNDERSTAND_GRAPH_DIR` em `docs-tooling.conf`): grafo de código para blast radius
+  e para cruzar doc↔código.
 
 A curadoria é **contínua e automatizada**, não um evento. Cada sessão deixa o repo mais limpo que encontrou.
 
@@ -86,6 +90,10 @@ e o `status` diz qual vale. Sem isso, a IA (e o humano) escolhem no escuro.
   (ignora exemplos em code fence; resolve `%20`/acento) + citações a nomes renomeados/deletados.
   `--selftest` roda o teste negativo do próprio detector. Também roda no pre-commit `.githooks/`, no
   loop e no CI (`.github/workflows/docs-integrity.yaml`, backstop de `--no-verify`/clone sem hook).
+  Para política de diff documental, rode `python3 scripts/docs-wiki-lint.py --worktree` durante revisão
+  local, `--staged` antes do commit ou `--diff-base <ref>` no CI/PR. Esse modo bloqueia invariantes
+  mecânicas: Markdown novo/movido/removido em `docs/**` precisa vir acompanhado de atualização em
+  `docs/log.md` e, quando aplicável, no índice/README da categoria.
 - **Prune** (política desde 2026-07-07): **git é o arquivo.** Doc `superseded`/`historico` resolvido, PDF
   render, JSON regenerável e print de QA são REMOVIDOS do working tree (recuperáveis via
   `git log --diff-filter=D --summary -- docs/`); o `log.md` preserva o registro temporal do que saiu.
@@ -94,6 +102,11 @@ e o `status` diz qual vale. Sem isso, a IA (e o humano) escolhem no escuro.
 ## 6. Operação
 
 - Skill orquestradora: **`repo-wiki-curator`** (`.claude/skills/` + espelho `.agents/skills/`).
+- Config central: `docs-tooling.conf` (`DOCS_ROOT`, `DOCS_INDEX`, `DOCS_LOG`, `DOCS_WIKI_LINT`,
+  `REF_INTEGRITY`, `UNDERSTAND_*`, `IGNORED_TOOL_DIRS`).
 - Loop contínuo: `.claude/loop.md` (curadoria do repo inteiro).
 - Sub-schema especializado: `docs/design-system/SCHEMA.md` (pares coloridos, mining className).
 - Fonte da verdade do CÓDIGO (não é doc): `apps/web/styles/globals.css`, migrations, os próprios fontes.
+- Grafos como Understand Anything ajudam a navegar relações e blast radius, mas não substituem fonte viva.
+  Toda conclusão operacional deve voltar a código, índices/logs e dados/evidências do repo antes de virar
+  decisão ou documentação canônica.

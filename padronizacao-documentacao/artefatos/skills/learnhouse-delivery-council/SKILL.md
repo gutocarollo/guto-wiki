@@ -202,7 +202,12 @@ Sempre comece por:
 - plano, issue, diff ou prompt fornecido pelo usuario
 - codigo real sob `apps/api`, `apps/web`, `packages`, migrations, scripts e testes
 
-Se o tema envolver `/understand`, Understand Anything, `.understand-anything`, `knowledge-graph`, grafo de codigo ou `compute-batches`, leia obrigatoriamente `docs/architecture/2026-07-07-understand-anything-incremental-apps.md` e use a skill `understand-apps-incremental`. Regra bloqueante: o grafo do produto usa `PROJECT_ROOT=apps`, mas o Git root é a raiz do repo; incremental em `apps/` deve gerar changed files com `git diff --relative=apps <last>..HEAD --name-only -- apps` ou `bash scripts/understand-apps-changed-files.sh`. Nunca alimente `compute-batches` com paths `apps/api/...`; ele espera `api/...`.
+Se o tema envolver `/understand`, Understand Anything, `.understand-anything`, `knowledge-graph` ou grafo de
+codigo, leia primeiro o arquivo central `docs-tooling.conf` e use as chaves `UNDERSTAND_*`
+(`UNDERSTAND_PROJECT_ROOT`, `UNDERSTAND_GRAPH_DIR`, `UNDERSTAND_INCREMENTAL_DOC`,
+`UNDERSTAND_INCREMENTAL_SKILL`, `UNDERSTAND_CHANGED_FILES_CMD`). Use o grafo como acelerador de navegacao,
+blast radius e descoberta de relacoes. Nao trate o grafo como fonte final: confirme conclusoes operacionais
+no codigo vivo, docs indexadas/log temporal e dados/evidencias do repo.
 
 Leia tambem quando o tema exigir:
 

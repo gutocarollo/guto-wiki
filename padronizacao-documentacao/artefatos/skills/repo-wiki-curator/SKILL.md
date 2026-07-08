@@ -17,14 +17,18 @@ categoria, com sub-schema próprio em `docs/design-system/SCHEMA.md`).
 ## Contrato
 
 1. **Ler `docs/SCHEMA.md`** antes de tocar em qualquer doc.
-2. **Naming (SCHEMA §2):** `kebab-case` minúsculo; classe temporal define a data no nome —
+2. **Ler `docs-tooling.conf`** quando existir. Paths de docs/lints/hooks e Understand Anything ficam ali
+   (`DOCS_*`, `REF_INTEGRITY*`, `UNDERSTAND_*`, `IGNORED_TOOL_DIRS`), não espalhados em skills.
+3. **Naming (SCHEMA §2):** `kebab-case` minúsculo; classe temporal define a data no nome —
    `living` = `slug.md` (sem data), `event` = `YYYY-MM-DD-slug.md` (prefixo), `sequenced` = `NNNN-slug.md`.
    Exceções em caps: `README/SCHEMA/CLAUDE/AGENTS/LICENSE`. FULL-CAPS e Title-Case são violação.
-3. **Frontmatter** (SCHEMA §3): `title/status/updated/scope`. `status ∈ {canon, active, superseded, historico, proposta}`.
-4. **Dupla indexação temporal** (SCHEMA §4): todo `.md` no `index.md` da categoria + no `docs/log.md` de repo.
-5. **Prune = git é o arquivo** (SCHEMA §5): `superseded`/`historico` resolvido, PDF render, JSON regenerável e
+4. **Frontmatter** (SCHEMA §3): `title/status/updated/scope`. `status ∈ {canon, active, superseded, historico, proposta}`.
+5. **Dupla indexação temporal** (SCHEMA §4): todo `.md` no `index.md` da categoria + no `docs/log.md` de repo.
+6. **Prune = git é o arquivo** (SCHEMA §5): `superseded`/`historico` resolvido, PDF render, JSON regenerável e
    print de QA saem do working tree (git preserva); nunca deletar o que ainda informa o estado atual.
-6. **Nunca marcar `canon` plano que o código atual não confirma.** Verdade viva = código, não doc.
+7. **Nunca marcar `canon` plano que o código atual não confirma.** Verdade viva = código, não doc.
+8. **Understand/grafo é acelerador, não autoridade.** Use para navegar relações e blast radius, mas confirme
+   qualquer conclusão em código vivo, índices/logs e evidências do repo.
 
 ## Procedimento
 
@@ -41,6 +45,8 @@ categoria, com sub-schema próprio em `docs/design-system/SCHEMA.md`).
 5. Sub-wiki densa (design-system): atualize também `wiki/` e o SCHEMA especializado.
 6. Prune o superseded/resolvido (git rm) e registre no log.
 7. `python3 scripts/docs-wiki-lint.py` — deve ficar verde (ou justificar exceção no próprio script).
+   Use `--worktree` durante revisão local, `--staged` antes do commit e `--diff-base <ref>` em CI/PR
+   quando a pergunta for "este diff manteve log/índice atualizados?".
    Se a passada renomeou/deletou arquivos: `python3 scripts/ref-integrity.py --range <base>..HEAD`
    também verde (o pre-commit `.githooks/` re-checa no commit; o loop roda `--since` como backstop).
 
@@ -51,6 +57,7 @@ categoria, com sub-schema próprio em `docs/design-system/SCHEMA.md`).
 - docs pruned (com como recuperar via git);
 - backlog de naming restante (o que fica para próximas passadas do loop);
 - resultado de `python3 scripts/docs-wiki-lint.py`;
+- resultado de `python3 scripts/docs-wiki-lint.py --worktree` quando houver diff local relevante;
 - resultado de `python3 scripts/ref-integrity.py --range <base>..HEAD` quando houve rename/delete.
 
 ## Guardrail
